@@ -9,9 +9,12 @@ export default class GameScene extends Phaser.Scene {
   private backgroundForest: Phaser.GameObjects.TileSprite;
 
   private character: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
+  // eslint-disable-next-line @typescript-eslint/naming-convention
   private atk_anims = ['atk_1', 'atk_2', 'atk_3'];
   private atkKey: Phaser.Input.Keyboard.Key;
   private currentAttack = null;
+  private lives = 3;
+  private isDamageSafe = false;
 
   private cursors: Phaser.Types.Input.Keyboard.CursorKeys;
   private pointer: Phaser.Input.Pointer;
@@ -19,6 +22,7 @@ export default class GameScene extends Phaser.Scene {
   private outerCam: Phaser.Cameras.Scene2D.Camera;
 
   private grounds: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody[] = [];
+  private stones: Phaser.GameObjects.Image[] = [];
 
 
   constructor() {
@@ -26,20 +30,33 @@ export default class GameScene extends Phaser.Scene {
   }
 
   preload() {
+    // backgrounds
     this.load.image('sky', 'assets/packs/country-platform-files/layers/country-platform-back.png');
     this.load.image('nightSky', 'assets/backgrounds/night.jpg');
     this.load.image('ground', 'assets/tiles/tile.png');
+    this.load.image('way', 'assets/packs/country-platform-files/layers/country-platform-tiles-example.png');
+    this.load.image('forest', 'assets/packs/country-platform-files/layers/country-platform-forest.png');
 
+    // char animations
     this.load.atlas('idle', 'assets/character/idle.png', 'assets/character/idle.json');
     this.load.atlas('run', 'assets/character/run.png', 'assets/character/run2.json');
     this.load.atlas('jump', 'assets/character/jump.png', 'assets/character/jump.json');
     this.load.atlas('atk_1', 'assets/character/atk_1.png', 'assets/character/atk_1.json');
     this.load.atlas('atk_2', 'assets/character/atk_2.png', 'assets/character/atk_2.json');
     this.load.atlas('atk_3', 'assets/character/atk_3.png', 'assets/character/atk_3.json');
+    this.load.atlas('hurt', 'assets/character/atk_3.png', 'assets/character/atk_3.json');
 
-    this.load.image('way', 'assets/packs/country-platform-files/layers/country-platform-tiles-example.png');
-    this.load.image('forest', 'assets/packs/country-platform-files/layers/country-platform-forest.png');
-    this.load.atlas('smoke', 'assets/effects/jump_smoke.png', 'assets/effects/jump_smoke.json')
+    // effects
+    this.load.atlas('smoke', 'assets/effects/jump_smoke.png', 'assets/effects/jump_smoke.json');
+
+    // obstacles
+    for (let i = 0; i <= 31; i++) {
+      this.load.image('stone' + i, 'assets/obstacles/stones/singles/stone0' + (i > 9 ? i : `0${i}`) + '.png');
+    }
+    // this.load.image('stone2', 'assets/obstacles/stones/singles/stone001.png');
+    // this.load.image('stone3', 'assets/obstacles/stones/singles/stone002.png');
+    // this.load.image('stone4', 'assets/obstacles/stones/singles/stone003.png');
+    // this.load.image('stone5', 'assets/obstacles/stones/singles/stone004.png');
   }
 
   create() {
@@ -80,46 +97,53 @@ export default class GameScene extends Phaser.Scene {
       frames: this.anims.generateFrameNames('jump', { prefix: 'sprite', end: 18, zeroPad: 3 }),
       frameRate: 10,
       repeat: 0,
-    })
+    });
 
     this.anims.create({
       key: 'atk_1',
       frames: this.anims.generateFrameNames('atk_1', { prefix: 'sprite', end: 8, zeroPad: 3 }),
       frameRate: 10,
       repeat: 0,
-    })
+    });
 
     this.anims.create({
       key: 'atk_2',
       frames: this.anims.generateFrameNames('atk_2', { prefix: 'sprite', end: 7, zeroPad: 3 }),
       frameRate: 10,
       repeat: 0,
-    })
+    });
 
     this.anims.create({
       key: 'atk_3',
       frames: this.anims.generateFrameNames('atk_3', { prefix: 'sprite', end: 8, zeroPad: 3 }),
       frameRate: 10,
       repeat: 0,
-    })
+    });
+
+    this.anims.create({
+      key: 'hurt',
+      frames: this.anims.generateFrameNames('hurt', { prefix: 'sprite', end: 7, zeroPad: 3 }),
+      frameRate: 10,
+      repeat: 0,
+    });
 
     this.character.anims.play('running');
 
-    // create grounds
-    // for (let i = 0; i < 3; i++) {
-    //   const xPos = Math.floor(Math.random() * GamePage.width - 100);
-    //   const yPos = Math.floor(Math.random() * GamePage.height - 100);
+    // create stones
+    for (let i = 0; i <= 31; i++) {
+      const xPos = Math.floor((Math.random() * GamePage.width * 10) + GamePage.width);
+      const yPos = GamePage.height - 35 - ((32 * 1.5) / 2);
 
-    //   this.grounds[i] = this.physics.add.sprite(xPos <= 0 ? 1 : xPos, yPos <= 0 ? 1 : yPos , 'ground').setOrigin(0, 0);
-    //   this.grounds[i].setDisplaySize(100, 30);
-    //   this.grounds[i].setSize(100,30);
-    //   this.grounds[i].setImmovable();
-    //   this.grounds[i].body.checkCollision.down = false;
-    //   this.grounds[i].body.checkCollision.left = false;
-    //   this.grounds[i].body.checkCollision.right = false;
-    // }
+      this.stones[i] = this.physics.add.image(xPos, yPos, 'stone' + i).setOrigin(0, 0).setScale(1.5).setPushable(false);
+      // this.stones[i].setDisplaySize(100, 30);
+      // this.stones[i].setSize(100,30);
+    }
 
-    this.grounds.push(this.physics.add.sprite(0, GamePage.height - 25, 'ground').setOrigin(0, 0).setDisplaySize(GamePage.width, 10).setImmovable().setVisible(false));
+    this.grounds.push(this.physics.add.sprite(0, GamePage.height - 25, 'ground')
+      .setOrigin(0, 0)
+      .setDisplaySize(GamePage.width, 10)
+      .setImmovable()
+      .setVisible(false));
     // ground.displayWidth = GamePage.width;
     this.physics.add.collider(this.character, this.grounds);
     this.physics.systems.start(Phaser.Physics.Arcade);
@@ -128,10 +152,10 @@ export default class GameScene extends Phaser.Scene {
     this.pointer = this.input.activePointer;
 
     this.cameras.main.startFollow(this.character, true, 0.05, 0, -270, 0);
-    this.cameras.main.setBackgroundColor('#82b6ff')
+    this.cameras.main.setBackgroundColor('#82b6ff');
 
-    var particles = this.add.particles('smoke');
-    var emitter = particles.createEmitter({
+    const particles = this.add.particles('smoke');
+    const emitter = particles.createEmitter({
       speed: 10,
       scale: { start: 1, end: 2.5 },
       blendMode: 'ADD',
@@ -150,16 +174,16 @@ export default class GameScene extends Phaser.Scene {
     this.backgroundForest.tilePositionX = this.cameras.main.scrollX * 0.4;
     this.backgroundGround.tilePositionX = this.cameras.main.scrollX;
 
-    let velocityX = 400;
+    const velocityX = 400;
 
     const playerRelativePositionX = this.character.body.position.x - this.cameras.main.worldView.x;
 
     // avoid bugs
     if (this.character.body.y + this.character.body.height > GamePage.height - 25) {
-      console.log("INSIDE!")
+      console.log('INSIDE!');
       this.character.body.y = GamePage.height - 25 - this.character.body.height;
     }
-    if (playerRelativePositionX < 30) this.character.body.x += 1;
+    if (playerRelativePositionX < 30) { this.character.body.x += 1; }
 
     // check for left and right movement
     if (this.cursors.left.isDown && playerRelativePositionX >= 30) {
@@ -184,11 +208,50 @@ export default class GameScene extends Phaser.Scene {
         const random = Math.floor(Math.random() * this.atk_anims.length);
         this.character.play(this.atk_anims[random], true);
       } else {
-        console.log("ATTACKING!");
+        console.log('ATTACKING!');
       }
     }
 
     this.character.setVelocityX(velocityX);
+
+    // check if hurt => life - 1 & timeout for damage
+    this.checkObstacleCollision();
+  }
+
+  checkObstacleCollision() {
+    if (!this.isDamageSafe) {
+      this.physics.collide(this.stones, this.character, () => {
+        console.log("AAARGH");
+        this.isDamageSafe = true;
+        if (this.lives > 1) {
+          this.lives--;
+        } else {
+          console.log('HALLO');
+          const mainCam = this.cameras.main;
+          const screenCenterX: number = mainCam.worldView.x + mainCam.width / 2;
+          const screenCenterY: number = mainCam.worldView.y + mainCam.height / 2;
+          this.add.rectangle(mainCam.worldView.x, mainCam.worldView.y, mainCam.width, mainCam.height)
+            .setOrigin(0, 0)
+            .setFillStyle(0x000000, 0.3);
+          this.add.text(screenCenterX, screenCenterY, 'GAME OVER! REPLAY?', { color: '#000000' })
+            .setOrigin(0.5)
+            .setDepth(999)
+            .setDisplaySize(GamePage.width * 0.5, 30);
+          this.add.text(screenCenterX, GamePage.height * 0.35, 'REPLAY')
+            .setDepth(999)
+            .setDisplaySize(GamePage.width * 0.5, 30)
+            .setOrigin(0.5);
+          this.add.rectangle(screenCenterX, GamePage.height * 0.3, GamePage.width * 0.5, GamePage.height * 0.2, 0xffffff)
+            .setDepth(999)
+            .setOrigin(0.5)
+            .addListener('click', () => { console.log("HELLO??!?!?!?");this.scene.restart(); });
+          this.scene.pause('GameScene');
+        }
+        setTimeout(() => {
+          this.isDamageSafe = false;
+        }, 1000);
+      });
+    }
   }
 
   // shakeCamera() {
