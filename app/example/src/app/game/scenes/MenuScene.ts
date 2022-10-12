@@ -63,8 +63,7 @@ export default class MenuScene extends Phaser.Scene {
       })
       .on('pointerdown', () => {
         this.updateFirstTime = true;
-        this.scene.stop('MenuScene');
-        this.scene.get('GameScene').scene.restart();
+        this.scene.start('GameScene');
       });
     const replayTxt = this.add.text(screenCenterX, GamePage.height * 0.51, 'REPLAY', { color: '#FF0000' })
       .setDepth(999)

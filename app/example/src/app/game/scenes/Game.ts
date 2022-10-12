@@ -22,6 +22,7 @@ export default class GameScene extends Phaser.Scene {
 
   private grounds: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody[] = [];
   private stones: Phaser.GameObjects.Image[] = [];
+  private livesCircles: Phaser.GameObjects.Arc[] = [];
 
   private distance: number;
   private distanceText: Phaser.GameObjects.Text;
@@ -46,7 +47,7 @@ export default class GameScene extends Phaser.Scene {
     this.load.atlas('atk_1', 'assets/character/atk_1.png', 'assets/character/atk_1.json');
     this.load.atlas('atk_2', 'assets/character/atk_2.png', 'assets/character/atk_2.json');
     this.load.atlas('atk_3', 'assets/character/atk_3.png', 'assets/character/atk_3.json');
-    this.load.atlas('hurt', 'assets/character/atk_3.png', 'assets/character/atk_3.json');
+    this.load.atlas('hurt', 'assets/character/hurt.png', 'assets/character/hurt.json');
 
     // effects
     this.load.atlas('smoke', 'assets/effects/jump_smoke.png', 'assets/effects/jump_smoke.json');
@@ -58,7 +59,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   create() {
-    this.lives = 3;
+    this.lives = 2;
     this.cameras.main.fadeIn(1000);
     // setup background
     this.backgroundSky = this.add.tileSprite(0, GamePage.height - 240, GamePage.width, 224, 'sky').setOrigin(0, 0);
@@ -100,14 +101,14 @@ export default class GameScene extends Phaser.Scene {
 
     this.anims.create({
       key: 'atk_1',
-      frames: this.anims.generateFrameNames('atk_1', { prefix: 'sprite', end: 8, zeroPad: 3 }),
+      frames: this.anims.generateFrameNames('atk_1', { prefix: 'sprite', end: 7, zeroPad: 3 }),
       frameRate: 10,
       repeat: 0,
     });
 
     this.anims.create({
       key: 'atk_2',
-      frames: this.anims.generateFrameNames('atk_2', { prefix: 'sprite', end: 7, zeroPad: 3 }),
+      frames: this.anims.generateFrameNames('atk_2', { prefix: 'sprite', end: 6, zeroPad: 3 }),
       frameRate: 10,
       repeat: 0,
     });
@@ -121,7 +122,7 @@ export default class GameScene extends Phaser.Scene {
 
     this.anims.create({
       key: 'hurt',
-      frames: this.anims.generateFrameNames('hurt', { prefix: 'sprite', end: 7, zeroPad: 3 }),
+      frames: this.anims.generateFrameNames('hurt', { prefix: 'sprite', end: 6, zeroPad: 3 }),
       frameRate: 10,
       repeat: 0,
     });
@@ -134,6 +135,12 @@ export default class GameScene extends Phaser.Scene {
       const yPos = GamePage.height - 35 - ((32 * 1.5) / 2);
 
       this.stones[i] = this.physics.add.image(xPos, yPos, 'stone' + i).setOrigin(0, 0).setScale(1.5).setPushable(false);
+    }
+
+    for (let i = 0; i < 3; i++) {
+      const width = 20;
+      this.livesCircles[i] = this.add.circle(10 + (i * width * 2) + width, 10 + width / 2, width, 0xFF0000, 1).setStrokeStyle(1, 0);
+      this.livesCircles[i].setScrollFactor(0);
     }
 
     this.grounds.push(this.physics.add.sprite(0, GamePage.height - 25, 'ground')
@@ -162,22 +169,25 @@ export default class GameScene extends Phaser.Scene {
     emitter.startFollow(this.character, -15, 17);
 
     this.distance = 0;
-    this.distanceText = this.add.text(0,0, this.distance.toString(), {color: '#00cc00', fontSize: '35px'});
-    this.distanceText.setPosition(GamePage.width - this.distanceText.width-20, 20).setScrollFactor(0);
+    this.distanceText = this.add.text(0, 0, this.distance.toString(), { color: '#00cc00', fontSize: '35px' });
+    this.distanceText.setPosition(GamePage.width - this.distanceText.width - 20, 20).setScrollFactor(0);
 
-    this.jumpButton = this.add.circle(10, GamePage.height-10, 40, 0, 0.2).setScrollFactor(0);
-    this.jumpButton.setPosition(this.jumpButton.width/2+10, GamePage.height-this.jumpButton.height/2-10)
-    .setInteractive()
-    .on('pointerdown', () => this.jump());
+    this.jumpButton = this.add.circle(10, GamePage.height - 10, 40, 0, 0.2).setScrollFactor(0);
+    this.jumpButton.setPosition(this.jumpButton.width / 2 + 10, GamePage.height - this.jumpButton.height / 2 - 10)
+      .setInteractive()
+      .on('pointerdown', () => {
+        if (this.character.body.touching.down
+          || this.character.body.y + this.character.body.height >= GamePage.height - 30) this.jump()
+      });
 
-    this.atkButton = this.add.circle(GamePage.width-10, GamePage.height-10, 40, 0, 0.2).setScrollFactor(0);
-    this.atkButton.setPosition(GamePage.width-10-this.atkButton.width/2, GamePage.height-10-this.atkButton.height/2)
-    .setInteractive()
-    .on('pointerdown', () => this.attack());
+    this.atkButton = this.add.circle(GamePage.width - 10, GamePage.height - 10, 40, 0, 0.2).setScrollFactor(0);
+    this.atkButton.setPosition(GamePage.width - 10 - this.atkButton.width / 2, GamePage.height - 10 - this.atkButton.height / 2)
+      .setInteractive()
+      .on('pointerdown', () => this.attack());
   }
 
   update() {
-    this.grounds[0].setDisplaySize(this.character.body.x + GamePage.width, 20);
+    this.grounds[0].setDisplaySize(this.character.body.x + GamePage.width * 2, 20);
     this.physics.world.setBounds(0, 0, this.character.body.position.x + GamePage.width, this.physics.world.bounds.height);
 
     // parallax
@@ -221,41 +231,43 @@ export default class GameScene extends Phaser.Scene {
     // check if hurt => life - 1 & timeout for damage
     this.checkObstacleCollision();
 
-    this.distanceText.setText((this.distance/10).toString()+' Meter');
-    this.distanceText.setPosition(GamePage.width - this.distanceText.width-10, 10).setScrollFactor(0);
+    this.distanceText.setText((this.distance / 10).toString() + ' Meter');
+    this.distanceText.setPosition(GamePage.width - this.distanceText.width - 10, 10).setScrollFactor(0);
     this.distance++;
   }
 
   checkObstacleCollision() {
     if (!this.isDamageSafe) {
-      this.physics.collide(this.stones, this.character, () => {
-        console.log('-1 Life!');
-        this.isDamageSafe = true;
-        if (this.lives > 1) {
-          this.lives--;
+      this.physics.collide(this.stones, this.character, (stone) => {
+        if (this.atk_anims.includes(this.character.anims.currentAnim.key)) {
+          stone.destroy();
         } else {
-          console.log('PAUSED!');
-          this.scene.pause('GameScene');
-          this.scene.launch('MenuScene');
+          this.livesCircles[this.lives].setFillStyle(0, 0.1);
+          this.character.anims.play('hurt');
+          this.isDamageSafe = true;
+          if (this.lives > 0) {
+            this.lives--;
+          } else {
+            this.scene.start('MenuScene');
+          }
+          setTimeout(() => {
+            this.isDamageSafe = false;
+          }, 1000);
         }
-        setTimeout(() => {
-          this.isDamageSafe = false;
-        }, 1000);
       });
     }
   }
 
-  attack(){
+  attack() {
     if (this.character.anims.currentAnim.key === 'running' || this.character.anims.currentAnim.key === 'jumping') {
       const random = Math.floor(Math.random() * this.atk_anims.length);
-      this.character.play(this.atk_anims[random], true);
+      this.character.anims.play(this.atk_anims[random], true);
     } else {
-      console.log('ATTACKING!');
+      console.log('Already ATTACKING!');
     }
   }
 
-  jump(){
-    console.log("CHARACTER: ", this.character);
+  jump() {
     this.character.setVelocityY(-600);
     this.character.play('jumping', true);
   }

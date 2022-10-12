@@ -43,7 +43,7 @@
             }
         },
         {
-            "filename": "sprite007",
+            "filename": "sprite006",
             "frame": {
                 "x": 508,
                 "y": 21,
@@ -64,7 +64,7 @@
             }
         },
         {
-            "filename": "sprite005",
+            "filename": "sprite004",
             "frame": {
                 "x": 342,
                 "y": 22,
@@ -85,7 +85,7 @@
             }
         },
         {
-            "filename": "sprite006",
+            "filename": "sprite005",
             "frame": {
                 "x": 426,
                 "y": 22,
@@ -106,7 +106,7 @@
             }
         },
         {
-            "filename": "sprite003",
+            "filename": "sprite002",
             "frame": {
                 "x": 180,
                 "y": 24,
@@ -127,7 +127,7 @@
             }
         },
         {
-            "filename": "sprite004",
+            "filename": "sprite003",
             "frame": {
                 "x": 259,
                 "y": 24,
