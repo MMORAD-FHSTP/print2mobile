@@ -6,6 +6,7 @@ import { Platform } from '@ionic/angular';
 import Phaser from 'phaser';
 import GameScene from './scenes/Game';
 import IntroScene from './scenes/Intro';
+import MenuScene from './scenes/MenuScene';
 
 // export default class Game extends Phaser.Game {
 
@@ -60,7 +61,12 @@ export class GamePage implements OnInit {
         default: 'arcade'
       },
       parent: 'game',
-      scene: [IntroScene, GameScene]
+      scale: {
+        mode: Phaser.Scale.FIT,
+        parent: 'game',
+        autoCenter: Phaser.Scale.CENTER_BOTH,
+      },
+      scene: [IntroScene, GameScene, MenuScene]
     };
 
     GamePage.platform = this.platform;
