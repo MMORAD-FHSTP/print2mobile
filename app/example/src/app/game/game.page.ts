@@ -2,6 +2,7 @@
 
 import { AfterViewInit, Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { Platform } from '@ionic/angular';
+import { ScreenOrientation } from '@ionic-native/screen-orientation/ngx';
 
 import Phaser from 'phaser';
 import GameScene from './scenes/Game';
@@ -37,9 +38,7 @@ export class GamePage implements OnInit {
   config: Phaser.Types.Core.GameConfig;
 
   constructor(private platform: Platform) {
-    // const width: number = platform.width() < 780 ? platform.width() : 780;
-    // const height: number = platform.height() < 430 ? platform.height() : 430;
-
+    window.screen.orientation.lock('landscape');
   }
 
   ngOnInit(): void {
@@ -74,5 +73,7 @@ export class GamePage implements OnInit {
     GamePage.height = height;
 
     GamePage.phaserGame = new Phaser.Game(this.config);
+
+    GamePage.phaserGame.scale.lockOrientation('landscape');
   }
 }

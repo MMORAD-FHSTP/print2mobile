@@ -51,6 +51,7 @@ export default class IntroScene extends Phaser.Scene {
         this.transitionTimer = null;
         this.shakeInterval = null;
       } catch(e) {}
+      this.scene.stop();
       this.scene.start('GameScene');
     }
   }
